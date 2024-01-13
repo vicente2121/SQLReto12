@@ -1,0 +1,169 @@
+use reto12
+
+--Tablas de aterrizaje
+drop table XmasDataset
+
+
+select * from XmasDataset
+
+create table XmasDataset (
+fecha date, 
+[Time_(Hr/Min)] varchar(5) ,
+Customer_Age_Range varchar(8),
+Product_Type varchar(8),
+ Product_Category varchar(18),
+ Product_Name varchar(26),
+ Purchase_Type  varchar(11),
+ Country  varchar(14),
+ City  varchar(10),
+ Gender  varchar(6),
+ Xmas_Budget varchar(6),
+Payment_Method  varchar(18),
+ Quantity integer,
+ Unit_Price float,
+ Tax_Amount float,
+ Unit_Cos float,
+ Cost float,
+ Total_Sales float,
+ Profit float
+)
+
+create table Countries
+( Country varchar(15),
+ImageURL text
+)
+
+create table PurchaseType
+(Purchase_Type varchar(15),
+ImageURL text
+)
+--Tablas que se conectaran a Power BI
+
+--Crear tabla calendario
+
+--Primero encontrar la fecha maxima de la tabla XmasDataset
+
+select max(fecha) from  XmasDataset
+
+select min(fecha) from XmasDataset
+
+
+
+-- Declarar las variables de fecha
+DECLARE @FechaInicio DATE;
+DECLARE @FechaFin DATE;
+
+-- Obtener el rango de fechas de XmasDataset
+SELECT @FechaInicio = MIN(fecha) FROM XmasDataset;
+SELECT @FechaFin = MAX(fecha) FROM XmasDataset;
+
+-- Crear la tabla Calendario si no existe
+
+CREATE TABLE Calendario (
+    Fecha DATE PRIMARY KEY
+);
+
+-- Inicializar la variable para el bucle
+DECLARE @FechaActual DATE = @FechaInicio;
+
+-- Bucle para insertar fechas en la tabla Calendario
+WHILE @FechaActual <= @FechaFin
+BEGIN
+    INSERT INTO Calendario (Fecha)
+    VALUES (@FechaActual);
+
+    SET @FechaActual = DATEADD(DAY, 1, @FechaActual);
+END
+
+select * from Calendario
+
+Drop table Calendario
+
+select fecha,DAY(fecha) as dia,MONTH(fecha) as N_mes,YEAR(fecha) as Anio,DATEPART(week,fecha) as semana,
+datepart(qq,fecha) as Trimestre, DATENAME(month, fecha) as NombreMes, datename(dw,fecha) as NombreDia into Calendario_1
+from Calendario 
+
+
+select * from Calendario_1
+
+--Crear dimension de tiempos 
+
+-- Crear la tabla de dimensión de tiempo
+CREATE TABLE DimTiempo (
+    HoraMinuto CHAR(5) PRIMARY KEY,
+    Hora INT,
+    Minuto INT,
+  
+);
+
+-- Poblar la tabla con todas las combinaciones de horas y minutos
+DECLARE @Hora INT = 0;
+DECLARE @Minuto INT;
+WHILE @Hora < 24
+BEGIN
+    SET @Minuto = 0;
+    WHILE @Minuto < 60
+    BEGIN
+        INSERT INTO DimTiempo (HoraMinuto, Hora, Minuto)
+        VALUES (
+            RIGHT('0' + CAST(@Hora AS VARCHAR(2)), 2) + ':' + RIGHT('0' + CAST(@Minuto AS VARCHAR(2)), 2),
+            @Hora,
+            @Minuto
+        );
+        SET @Minuto = @Minuto + 1;
+    END;
+    SET @Hora = @Hora + 1;
+END;
+
+-- Consultar la tabla para verificar
+SELECT * FROM DimTiempo;
+
+---Crear dimension Customer_Age_Range
+
+select distinct (customer_age_range) 
+into Dim_customer_age_range from XmasDataset
+
+select * from Dim_customer_age_range
+
+--Creamos la dimension producto
+
+
+SELECT DISTINCT Product_Name, Product_Category, Product_Type into Dim_Productos
+FROM XmasDataset;
+
+select * from Dim_Productos
+
+--Creamos la dimenson Dim_Purchase
+
+select distinct (Purchase_Type) into Dim_Purchase from XmasDataset
+
+select * from Dim_Purchase
+
+--creamos la dimension Dim_Country
+
+
+select distinct city,Country into Dim_Country
+from XmasDataset 
+
+select * from Dim_Country
+
+---Dimension de Gender
+
+select distinct gender into Dim_gender
+from XmasDataset
+
+--Dimesion Dim_Xmas_Budget
+
+select distinct Xmas_Budget into Dim_Xmas_Budget
+from XmasDataset
+
+--Dimension Dim_Payment_method
+
+select distinct Payment_method into Dim_Payment_method from XmasDataset
+
+
+
+select * from XmasDataset
+
+
+
